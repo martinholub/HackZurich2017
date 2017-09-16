@@ -2,3 +2,4 @@
 *.pyc
 env
 src_local/*
+.DS_Store
