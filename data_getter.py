@@ -1,8 +1,10 @@
-import requests
+import requests, re
 import xml.etree.ElementTree as ET
 from requests_futures.sessions import FuturesSession
 
 session = FuturesSession()
+
+'7ac5beb5313d4a19b623d777c4707076'
 
 def r_auth_token():
     resp = requests.get('https://commerce.reuters.com/rmd/rest/xml/login?username=HackZurichAPI&password=8XtQb447')
@@ -58,10 +60,26 @@ def r_body_run(fut):
     xml = ET.fromstring(resp.text)
     ns = {'html': 'http://www.w3.org/1999/xhtml'}
     body = xml.find('.//html:body', ns)
-    return body and ET.tostring(body, encoding='unicode', method='text')
+    return body and re.sub('\s+', ' ', ET.tostring(body, encoding='unicode', method='text'))
 
 def r_body(id):
     return r_body_run(r_body_fut(id))
+
+def r_entities_fut(id):
+    return session.get('https://rmb.reuters.com/rmd/rest/xml/itemEntities', params={'token': auth_token, 'id': id})
+
+def r_entities_run(fut):
+    resp = fut.result()
+    xml = ET.fromstring(resp.text)
+    ents = xml.findall('*/entity')
+    return {'entities': {
+        ent.find("*/[name='name']/value").text: float(ent.find('score').text)
+        for ent in ents
+        if ent.find("*/[name='name']/value") is not None
+    }, 'tags': {}, 'topics': {}}
+
+def r_entities(id):
+    return r_entities_run(r_entities_fut(id))
 
 def run(text):
     r_auth_token() #In case it timed out
@@ -69,8 +87,18 @@ def run(text):
     entities = point['entities']
     main_actors = sorted(entities, key=entities.get)[-4:]
     related_articles = r_search(main_actors)
-    fut_article_bodies = [r_body_fut(id) for id in related_articles]
+    fut_article_bodies = (r_body_fut(id) for id in related_articles)
     article_bodies = map(r_body_run, fut_article_bodies)
-    fut_environs = [analyze_fut(body) for body in article_bodies if body]
+    fut_environs = (analyze_fut(body) for body in article_bodies if body)
     environs = list(map(analyze_run, fut_environs))
+    return {'point': point, 'environs': environs}
+
+def fastrun(text):
+    r_auth_token() #In case it timed out
+    point = analyze(text)
+    entities = point['entities']
+    main_actors = sorted(entities, key=entities.get)[-4:]
+    related_articles = r_search(main_actors)
+    fut_article_entities = (r_entities_fut(id) for id in related_articles)
+    environs = list(map(r_entities_run, fut_article_entities))
     return {'point': point, 'environs': environs}
