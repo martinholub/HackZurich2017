@@ -15,7 +15,10 @@ window.onload = function () {
                 var json = JSON.parse(xhr.responseText);
                 
                 console.log(json.fringe_score);
-                document.getElementById("score").textContent = json.fringe_score + ' Fringiness'; 
+                document.getElementById("score").textContent =
+                    'This article is ' +
+                    json.fringe_score.toLocaleString('en-us', {maximumFractionDigits: 1, style: 'percent'})
+                    + ' Fringy!'; 
                 
                 var bkdiv = document.getElementById("hist");
                 
