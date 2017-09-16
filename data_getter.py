@@ -46,4 +46,13 @@ def r_body(id):
     xml = ET.fromstring(resp.text)
     ns = {'html': 'http://www.w3.org/1999/xhtml'}
     body = xml.find('.//html:body', ns)
-    return ET.tostring(body, encoding='unicode', method='text')
+    return body and ET.tostring(body, encoding='unicode', method='text')
+
+def run(text):
+    point = analyze(text)
+    entities = point['entities']
+    main_actors = sorted(entities, key=entities.get)[-4:]
+    related_articles = r_search(main_actors)
+    article_bodies = [r_body(id) for id in related_articles]
+    environs = [analyze(body) for body in article_bodies if body]
+    return {'point': point, 'environs': environs}
