@@ -156,21 +156,21 @@ def add_hovertool(plot, x, y, entities, topics):
     
     # Create dataframe holding all the data that we want to appear on the final plot, including hover
     d = {'x': x,
-        'y': y,
-        'entities': entities,
-        'topics': topics,
-        'numEnts': numEnts,
-        'dists': dists}
+         'y': y,
+         'entities': entities,
+         'topics': topics,
+         'numEnts': numEnts,
+         'dists': dists}
     # works also for series of different length
-    plot_df = pd.DataFrame(dict([ (k, pd.Series(v)) for k,v in d.items() ]))
+    plot_df = dict([ (k, pd.Series(v)) for k,v in d.items() ])
     
     # Plot empty circles and specify source. This enables us to add hover.
     plot.circle('x',
-               'y', 
+                'y', 
                 fill_color= None,
                 fill_alpha=0,
                 line_color = None,
-               source = ColumnDataSource(data = plot_df))
+                source = ColumnDataSource(data=plot_df))
     
     # Add Hover tooltips
     cols = ['entities', 'topics', 'numEnts', 'dists']
@@ -215,9 +215,11 @@ def res_to_matrix(res):
     for env in l:
         v = np.zeros(len(reference))
         try:
-            v[np.hstack([np.where(reference==key)
-                         for key in keys(env)[0]] = 1
-            vs.append(v)
+            s = np.hstack([np.where(reference==key)
+                           for key in keys(env)]) 
+            if np.sum(s) >= 1:
+                v[s] = 1
+                vs.append(v)
         except ValueError:
             pass
 
