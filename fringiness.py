@@ -46,7 +46,6 @@ def fringiness(data, distance_metric='cosine'):
     
     pca = PCA()
     loadings = pca.fit_transform(pairwise_distances)
-    print(loadings)
     sum_sq_loadings = np.sum(loadings**2 * pca.explained_variance_ratio_, 
                              axis=1)
     sum_sq_loadings -= sum_sq_loadings.min()
@@ -131,7 +130,7 @@ def res_to_matrix(res):
         v = np.zeros(len(reference))
         try:
             v[np.hstack([np.where(reference==key)
-                         for key in keys(env)])[0]] = 1
+                         for key in keys(env)[0]] = 1
             vs.append(v)
         except ValueError:
             pass
