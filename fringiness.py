@@ -112,12 +112,18 @@ def histogram_bokeh(s):
 
     return p
 
+def keys(env):
+    keys = set()
+    keys |= env['entities'].keys()
+    keys |= env['tags'].keys()
+    keys |= env['topics'].keys()
+    return keys
+
 def res_to_matrix(res):
     all_keys = set()
     l = [res['point']] + res['environs']
-
     for env in l:
-        all_keys |= env['entities'].keys()
+        all_keys |= keys(env)
     reference = np.array(list(all_keys))
 
     vs = []
@@ -125,7 +131,7 @@ def res_to_matrix(res):
         v = np.zeros(len(reference))
         try:
             v[np.hstack([np.where(reference==key)
-                         for key in env['entities']])[0]] = 1
+                         for key in keys(env)])[0]] = 1
             vs.append(v)
         except ValueError:
             pass
