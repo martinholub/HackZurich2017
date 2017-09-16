@@ -19,7 +19,7 @@ from data_getter import *
 
 def fringiness(data, distance_metric='cosine'):
     """Calculates the fringiness of news articles.
-    
+
     The fringiness is a number between 0 and 1 that rates each news article 
     based on how well it is embedded in the context.
 
@@ -95,7 +95,7 @@ def vertohex(x, y):
     dists = ["{:0.2f}".format(x/maxR) for x in R]
     return dists, hex_color_codes
 
-def embedding_plot_bokeh(x, y, s):
+def embedding_plot_bokeh(x, y, s, res):
     """
     Draws a Bokeh scatter plot with the color indicating the fringiness. The 
     first row is indicated in red.
@@ -113,7 +113,10 @@ def embedding_plot_bokeh(x, y, s):
     -------
     bokeh.plotting.figure.Figure
     """
-
+    # Produce annotations
+    _, idxer = res_to_matrix(res)
+    (ents, tit) = res_to_annot(res, idxer)
+    
     # Generate colors and some annotations
     
     if not any(s):
@@ -134,11 +137,12 @@ def embedding_plot_bokeh(x, y, s):
     p.ygrid.grid_line_color = None
     p.xgrid.grid_line_color = None
 
-    p.circle(x, y, fill_color=colors,  fill_alpha=0.6, line_color = None)
-
+    # p.circle(x, y, fill_color=colors,  fill_alpha=0.6, line_color = None)
+    p = plot_with_hover(p, x, y, s, colors, ents, tit)
+    
     return p
 
-def add_hovertool(plot, x, y, entities, topics):
+def plot_with_hover(plot, x, y, f, colors, entities, title):
     '''
     Add hover over individual datapoints.
     We use dirty trick of plotting invisible scatter points so that we can use exisitng plot.
@@ -156,33 +160,67 @@ def add_hovertool(plot, x, y, entities, topics):
     
     # Create dataframe holding all the data that we want to appear on the final plot, including hover
     d = {'x': x,
-         'y': y,
-         'entities': entities,
-         'topics': topics,
-         'numEnts': numEnts,
-         'dists': dists}
+        'y': y,
+        'f': f,
+        'ents': entities,
+        'numEnts': numEnts,
+        'dists': dists,
+        'tit': title}
     # works also for series of different length
     plot_df = dict([ (k, pd.Series(v)) for k,v in d.items() ])
     
     # Plot empty circles and specify source. This enables us to add hover.
     plot.circle('x',
                 'y', 
-                fill_color= None,
-                fill_alpha=0,
+                fill_color= colors,
+                fill_alpha=0.6,
+                radius = 0.025,
                 line_color = None,
-                source = ColumnDataSource(data=plot_df))
+                source = ColumnDataSource(data = plot_df))
     
-    # Add Hover tooltips
-    cols = ['entities', 'topics', 'numEnts', 'dists']
-    names = ['Entities', 'topics', '# of Entities', 'Dsitance from current']
-    tooltips = [(n, '@' + v) for (n, v) in zip(names, cols)]
-    hover = HoverTool()
-    hover.tooltips = tooltips
-    hover.tooltips.append(("(x,y)", "($x, $y)"))
-    # Add hover tool to the plot
+    # Add Hover tooltips    
+    hover = gimmeHover()
     plot.add_tools(hover)
+    
     return plot
+def gimmeHover():
 
+    cols = ['f', 'ents', 'numEnts', 'dists', 'tit']
+    names = ['F', 'Entities', '# of Entities', 'Dsitance from current', 'Tile']
+    ttips_pairs = [(n, '@' + v) for (n, v) in zip(names, cols)]
+    
+    hover = HoverTool(tooltips = """
+    <div style = "max-width: 750px">
+        <div>
+            <span style="font-size: 28px; font-weight: bold;">F = </span>
+            <span style="font-size: 28px; font-weight: bold;">@f</span>
+        </div>
+        <div>
+            <span style="font-size: 18px; font-weight: bold;">Title:<br/></span>
+            <span style="font-size: 18px;">@tit</span>
+        </div>
+        <div>
+            <span style="font-size: 18px; font-weight: bold;">Entities:<br/></span>
+            <span style="font-size: 18px;">@ents</span>
+        </div>
+        <div>
+            <span style="font-size: 18px; font-weight: bold;">No. of Entities = </span>
+            <span style="font-size: 18px;">@numEnts</span>
+        </div>
+        <!--
+        <div>
+            <span style="font-size: 12px; font-weight: bold;">Distance= </span>
+            <span style="font-size: 10px;">@dists</span>
+        </div>
+        <div>
+            <span style="font-size: 12px; font-weight: bold;">(x,y) </span>
+            <span style="font-size: 10px;">($x, $y) </span>
+        </div>
+        -->
+    </div>
+    """)
+    return hover
+    
 def histogram_bokeh(s):
     p=figure(title='Histogram')
     bins=20
@@ -210,9 +248,10 @@ def res_to_matrix(res):
     for env in l:
         all_keys |= keys(env)
     reference = np.array(list(all_keys))
-
+    idxer = np.ones(len(l), dtype = bool)
+    
     vs = []
-    for env in l:
+    for it, env in enumerate(l):
         v = np.zeros(len(reference))
         try:
             s = np.hstack([np.where(reference==key)
@@ -221,10 +260,11 @@ def res_to_matrix(res):
                 v[s] = 1
                 vs.append(v)
         except ValueError:
+            idxer[it] = False;
             pass
 
     vs = np.vstack(vs)
-    return vs
+    return vs, idxer
 
 def text_to_matrix(text):
     return res_to_matrix(data_getter.run(text))
@@ -253,16 +293,18 @@ def random_data(n, m, sparsity=0.8, mean=2, distribution='poisson'):
     r[p<sparsity] = 0
     return r
 
-def res_to_annot(res):
+def res_to_annot(res, idxer):
     # Take resources .json and extract topics and entites
     # res is a result of data_getter.run(text)
     ents = []
-    tops = []
-    ents.append(list(res['point']['entities'].keys()))
-    tops.append(list(res['point']['topics'].keys()))
-    
-    for env in res['environs']:
+    tit = []
+    l = [res['point']] + res['environs']
+    l = [e for (id, e) in zip(idxer, l) if id]
+    for env in l:
         ents.append(list(env['entities'].keys()))
-        tops.append(list(env['topics'].keys()))
+        try:
+            tit.append([env['title']])
+        except:
+            tit.append([])
     
-    return (ents, tops)
+    return (ents, tit)
