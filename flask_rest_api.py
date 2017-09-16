@@ -58,6 +58,13 @@ def frindge():
     
     plot_html = file_html(plot, CDN, "Scatter")
     histogram_html = file_html(plot, CDN, "Scatter")
+    s = open("scatter.html", "w")
+    s.write(plot_html)
+    s.close
+    
+    h = open("scatter.html", "w")
+    h.write(histogram_html)
+    h.close
     
     try: 
         f_input_score = f[0]
@@ -66,7 +73,7 @@ def frindge():
     
     return jsonify(
         {'input': current_article_text, "fringe_score": f_input_score, "scatter_html": plot_html, 
-         "histogram_html":histogram_html}), 201
+         "histogram_html":histogram_html}), 200
 
 
 if __name__ == '__main__':
