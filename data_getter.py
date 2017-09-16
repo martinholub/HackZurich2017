@@ -1,4 +1,4 @@
-import requests, re
+import requests, re, pickle
 import xml.etree.ElementTree as ET
 from requests_futures.sessions import FuturesSession
 
@@ -13,6 +13,19 @@ def r_auth_token():
     auth_token = xml.text
 
 r_auth_token()
+
+def load_cache():
+    global cache
+    cache = {}
+    try:
+        with open('cache', 'rb') as cachefile:
+            cache = pickle.load(cachefile)
+    except:
+        pass
+        
+def save_cache():
+    with open('cache', 'wb') as cachefile:
+        pickle.dump(cache, cachefile)
 
 def topics(json):
     return {v['name']: v.get('score', 0)
@@ -67,9 +80,14 @@ def r_body(id):
     return r_body_run(r_body_fut(id))
 
 def r_entities_fut(id):
+    if id in cache:
+        return cache[id]
+    print('getting entities', id)
     return session.get('https://rmb.reuters.com/rmd/rest/xml/itemEntities', params={'token': auth_token, 'id': id})
 
 def r_entities_run(fut):
+    if type(fut) == dict:
+        return fut
     resp = fut.result()
     xml = ET.fromstring(resp.text)
     ents = xml.findall('*/entity')
@@ -94,8 +112,9 @@ def run(text, limit=15):
     environs = list(map(analyze_run, fut_environs))
     return {'point': point, 'environs': environs}
 
-def fastrun(text, limit=15):
+def fastrun(text, limit=300):
     r_auth_token() #In case it timed out
+    load_cache()
     point = analyze(text)
     entities = point['entities']
     main_actors = sorted(entities, key=entities.get)[-6:]
@@ -104,4 +123,6 @@ def fastrun(text, limit=15):
     environs = list(map(r_entities_run, fut_article_entities))
     for article in environs:
         article['title'] = related_articles[article['id']]
+        cache[article['id']] = article
+    save_cache()
     return {'point': point, 'environs': environs}
