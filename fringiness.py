@@ -9,13 +9,17 @@ import json
 #import matplotlib.pyplot as plt
 from bokeh.plotting import figure, show
 from bokeh.palettes import viridis
-from bokeh.models import Span
+from bokeh.models import Span, HoverTool
+from bokeh.models.sources import ColumnDataSource
+import pandas as pd
+from IPython.core.debugger import set_trace
+import data_getter
 
 from data_getter import *
 
 def fringiness(data, distance_metric='cosine'):
     """Calculates the fringiness of news articles.
-
+    
     The fringiness is a number between 0 and 1 that rates each news article 
     based on how well it is embedded in the context.
 
@@ -67,6 +71,29 @@ def embedding_plot_mpl(x, y, s):
     ax.scatter(x, y, c=s, vmin=0, vmax=1)
     ax.axis('off')
     return fig
+    
+def hex_color(color_float):
+    # Returns Hex color code
+    return str(hex(int(color_float * 255))).lstrip('0x').zfill(2).upper()
+
+def vertohex(x, y):
+    '''
+    Computes distance from centroid for list of x and y coordinates and gives hex value for coloring by distance from center.
+    '''
+    centroid = (np.mean(x), np.mean(y))
+    #X, Y = np.meshgrid(x, y)
+    R = np.sqrt((x - centroid[0])**2 + (y - centroid[1])**2)
+    maxR = np.amax(R)
+    
+    cmap_cust = (plt.cm.viridis(R / maxR))
+    hex_color_codes = []
+    for (v,r,d,_) in cmap_cust:
+        hex_color_codes.append(''.join(['#',
+                                      hex_color(v),
+                                      hex_color(r),
+                                      hex_color(d)]))
+    dists = ["{:0.2f}".format(x/maxR) for x in R]
+    return dists, hex_color_codes
 
 def embedding_plot_bokeh(x, y, s):
     """
@@ -86,16 +113,75 @@ def embedding_plot_bokeh(x, y, s):
     -------
     bokeh.plotting.figure.Figure
     """
-    col_ind = np.digitize(s, np.linspace(s.min(), s.max(), 20))
-    colormap = viridis(21)
-    colors = [colormap[int(ind)] for ind in col_ind]
-    colors[0] = 'red'
 
-    p = figure(title="Article embedding", tools=['tap','pan','zoom_in',
-        'zoom_out','wheel_zoom'])
-    p.circle(x, y, fill_color=colors, line_color=colors)
+    # Generate colors and some annotations
+    
+    if not any(s):
+        centroid , colors = vertohex(x, y)
+    else:
+        col_ind = np.digitize(s, np.linspace(s.min(), s.max(), 20))
+        colormap = viridis(21)
+        colors = [colormap[int(ind)] for ind in col_ind]
+        colors[0] = 'red'
+
+    # Define tools
+    toolbox = "tap, pan, wheel_zoom, box_zoom, reset, box_select, lasso_select"
+    # Define hover window
+    
+    # create a new plot with the tools, explicit ranges and some custom design
+    p = figure(plot_width= 1080, plot_height= 640, tools= [toolbox], title="Mouse over the dots")
+    p.axis.visible = False
+    p.ygrid.grid_line_color = None
+    p.xgrid.grid_line_color = None
+
+    p.circle(x, y, fill_color=colors,  fill_alpha=0.6, line_color = None)
 
     return p
+
+def add_hovertool(plot, x, y, entities, topics):
+    '''
+    Add hover over individual datapoints.
+    We use dirty trick of plotting invisible scatter points so that we can use exisitng plot.
+    doc, TBA
+    '''
+
+    # Compute distance from current article in terms of first two principal components
+    centroid = (x[0], y[0])
+    R = np.sqrt((x - centroid[0])**2 + (y - centroid[1])**2)
+    maxR = np.amax(R)
+    dists = ["{:0.2f}".format(x/maxR) for x in R]
+    
+    # Get number of entities from for each article = datapoint
+    numEnts = [len(en) for en in entities]
+    
+    # Create dataframe holding all the data that we want to appear on the final plot, including hover
+    d = {'x': x,
+        'y': y,
+        'entities': entities,
+        'topics': topics,
+        'numEnts': numEnts,
+        'dists': dists}
+    # works also for series of different length
+    plot_df = pd.DataFrame(dict([ (k, pd.Series(v)) for k,v in d.items() ]))
+    
+    # Plot empty circles and specify source. This enables us to add hover.
+    plot.circle('x',
+               'y', 
+                fill_color= None,
+                fill_alpha=0,
+                line_color = None,
+               source = ColumnDataSource(data = plot_df))
+    
+    # Add Hover tooltips
+    cols = ['entities', 'topics', 'numEnts', 'dists']
+    names = ['Entities', 'topics', '# of Entities', 'Dsitance from current']
+    tooltips = [(n, '@' + v) for (n, v) in zip(names, cols)]
+    hover = HoverTool()
+    hover.tooltips = tooltips
+    hover.tooltips.append(("(x,y)", "($x, $y)"))
+    # Add hover tool to the plot
+    plot.add_tools(hover)
+    return plot
 
 def histogram_bokeh(s):
     p=figure(title='Histogram')
@@ -139,7 +225,7 @@ def res_to_matrix(res):
     return vs
 
 def text_to_matrix(text):
-    return res_to_matrix(run(text))
+    return res_to_matrix(data_getter.run(text))
 
 def text_to_fringiness(text):
     return fringiness(res_to_matrix(run(text)))
@@ -164,3 +250,17 @@ def random_data(n, m, sparsity=0.8, mean=2, distribution='poisson'):
     p = np.random.rand(n*m).reshape((n,m))
     r[p<sparsity] = 0
     return r
+
+def res_to_annot(res):
+    # Take resources .json and extract topics and entites
+    # res is a result of data_getter.run(text)
+    ents = []
+    tops = []
+    ents.append(list(res['point']['entities'].keys()))
+    tops.append(list(res['point']['topics'].keys()))
+    
+    for env in res['environs']:
+        ents.append(list(env['entities'].keys()))
+        tops.append(list(env['topics'].keys()))
+    
+    return (ents, tops)
