@@ -132,3 +132,6 @@ def res_to_matrix(res):
 
 def text_to_matrix(text):
     return res_to_matrix(run(text))
+
+def text_to_fringiness(text):
+    return fringiness(res_to_matrix(run(text)))
