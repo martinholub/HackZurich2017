@@ -2,7 +2,7 @@ import requests, re
 import xml.etree.ElementTree as ET
 from requests_futures.sessions import FuturesSession
 
-session = FuturesSession()
+session = FuturesSession(max_workers=10)
 
 '7ac5beb5313d4a19b623d777c4707076'
 
@@ -46,7 +46,8 @@ def analyze(text):
 def r_search(query):
     query_str = 'OR'.join('"{}"'.format(q) for q in query)
     resp = requests.get('https://rmb.reuters.com/rmd/rest/xml/search',
-        params={'fieldsRef': 'id', 'token': auth_token, 'q': 'body:' + query_str})
+        params={'fieldsRef': 'id', 'channelCategory': 'OLR', 'limit': 15,
+        'token': auth_token, 'q': 'body:' + query_str})
     xml = ET.fromstring(resp.text)
     return [r.find('id').text
         for r in xml
@@ -85,7 +86,7 @@ def run(text):
     r_auth_token() #In case it timed out
     point = analyze(text)
     entities = point['entities']
-    main_actors = sorted(entities, key=entities.get)[-4:]
+    main_actors = sorted(entities, key=entities.get)[-6:]
     related_articles = r_search(main_actors)
     fut_article_bodies = (r_body_fut(id) for id in related_articles)
     article_bodies = map(r_body_run, fut_article_bodies)
@@ -97,7 +98,7 @@ def fastrun(text):
     r_auth_token() #In case it timed out
     point = analyze(text)
     entities = point['entities']
-    main_actors = sorted(entities, key=entities.get)
+    main_actors = sorted(entities, key=entities.get)[-6:]
     related_articles = r_search(main_actors)
     fut_article_entities = (r_entities_fut(id) for id in related_articles)
     environs = list(map(r_entities_run, fut_article_entities))
