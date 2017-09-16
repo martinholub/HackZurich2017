@@ -1,7 +1,6 @@
 #!flask/bin/python
 import logging
 
-import nltk
 from bokeh.plotting import figure
 from bokeh.resources import CDN
 from bokeh.embed import file_html
