@@ -6,7 +6,7 @@ from sklearn.decomposition import PCA
 
 import json
 
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from bokeh.plotting import figure, show
 from bokeh.palettes import viridis
 from bokeh.models import Span
