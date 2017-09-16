@@ -46,6 +46,7 @@ def fringiness(data, distance_metric='cosine'):
     
     pca = PCA()
     loadings = pca.fit_transform(pairwise_distances)
+    print(loadings)
     sum_sq_loadings = np.sum(loadings**2 * pca.explained_variance_ratio_, 
                              axis=1)
     sum_sq_loadings -= sum_sq_loadings.min()

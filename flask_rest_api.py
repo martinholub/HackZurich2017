@@ -2,8 +2,13 @@
 import logging
 
 import nltk
+from bokeh.plotting import figure
+from bokeh.resources import CDN
+from bokeh.embed import file_html
 from flask import Flask, jsonify, abort, make_response, request
 from flask_cors import CORS, cross_origin
+from fringiness import *
+from data_getter import * 
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
@@ -15,16 +20,54 @@ def not_found(error):
     return make_response(jsonify({'error': 'Not found'}), 404)
 
 
-@app.route('/frindge-default/v1.0', methods=['POST'])
+"""@app.route('/fringe-default/v1.0', methods=['POST'])
 def frindge():
     if not request.json or not 'input' in request.json:
         abort(400)
     current_article_text = request.json['input']
-    print(current_article_text)
+    logging.info(current_article_text)
     
-
+    res = run(current_article_text)
+    logging.info(res)
+    x, y, f = fringiness(res_to_matrix(res))
+    logging.info(f)
+    
+    try: 
+        f_input_score = f[0]
+    except: 
+        f_input_score = -1.
+    
     return jsonify(
-        {'input': current_article_text, "frindge_score": 0.5}), 201
+        {'input': current_article_text, "fringe_score": f_input_score}), 201
+"""
+
+
+@app.route('/fringe-plots/v1.0', methods=['POST'])
+def frindge():
+    if not request.json or not 'input' in request.json:
+        abort(400)
+    current_article_text = request.json['input']
+    logging.info(current_article_text)
+    
+    res = run(current_article_text)
+    logging.info(res)
+    x, y, f = fringiness(res_to_matrix(res))
+    logging.info(f)
+    
+    plot = embedding_plot_bokeh(x, y, f)
+    histogram = histogram_bokeh(f)
+    
+    plot_html = file_html(plot, CDN, "Scatter")
+    histogram_html = file_html(plot, CDN, "Scatter")
+    
+    try: 
+        f_input_score = f[0]
+    except: 
+        f_input_score = -1.
+    
+    return jsonify(
+        {'input': current_article_text, "fringe_score": f_input_score, "scatter_html": plot_html, 
+         "histogram_html":histogram_html}), 201
 
 
 if __name__ == '__main__':
