@@ -4,7 +4,12 @@ import numpy as np
 from scipy.spatial.distance import pdist, squareform
 from sklearn.decomposition import PCA
 
+import json
+
 import matplotlib.pyplot as plt
+from bokeh.plotting import figure, show
+from bokeh.palettes import viridis
+from bokeh.models import Span
 
 def fringiness(data, distance_metric='cosine'):
     """Calculates the fringiness of news articles.
@@ -44,7 +49,6 @@ def fringiness(data, distance_metric='cosine'):
     sum_sq_loadings /= sum_sq_loadings.max()
     return loadings.T[0], loadings.T[1], sum_sq_loadings
 
-import json
 
 def to_json(x, y, s, filename=None):
     d = [{'x':xx,'y':yy,'s':ss} for xx, yy, ss in zip(x, y, s)]
@@ -61,10 +65,24 @@ def embedding_plot_mpl(x, y, s):
     ax.axis('off')
     return fig
 
-from bokeh.plotting import figure, show
-from bokeh.palettes import viridis
-
 def embedding_plot_bokeh(x, y, s):
+    """
+    Draws a Bokeh scatter plot with the color indicating the fringiness. The 
+    first row is indicated in red.
+
+    Parameters
+    ----------
+    x : array_like
+        x coordinates of the points.
+    y : array_like
+        y coordinates of the points.
+    s : array_like
+        fringiness of the points.
+
+    Returns
+    -------
+    bokeh.plotting.figure.Figure
+    """
     col_ind = np.digitize(s, np.linspace(s.min(), s.max(), 20))
     colormap = viridis(21)
     colors = [colormap[int(ind)] for ind in col_ind]
@@ -75,3 +93,18 @@ def embedding_plot_bokeh(x, y, s):
     p.circle(x, y, fill_color=colors, line_color=colors)
 
     return p
+
+def histogram_bokeh(s):
+    p=figure(title='Histogram')
+    bins=20
+    h, e = np.histogram(s, density=True, bins=bins)
+
+    colors = viridis(bins)
+
+    p.quad(top=h, bottom=0, left=e[:-1], right=e[1:], fill_color=colors)
+    vline = Span(location=s[0], dimension='height', line_color='red', 
+                 line_width=3)
+    p.add_layout(vline)
+
+    return p
+
