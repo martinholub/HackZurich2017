@@ -117,7 +117,7 @@ def fastrun(text, limit=300):
     load_cache()
     point = analyze(text)
     entities = point['entities']
-    main_actors = sorted(entities, key=entities.get)[-6:]
+    main_actors = sorted(entities, key=entities.get)
     related_articles = r_search(main_actors, limit)
     fut_article_entities = (r_entities_fut(id) for id in related_articles)
     environs = list(map(r_entities_run, fut_article_entities))
