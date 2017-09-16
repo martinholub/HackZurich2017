@@ -97,7 +97,7 @@ def fastrun(text):
     r_auth_token() #In case it timed out
     point = analyze(text)
     entities = point['entities']
-    main_actors = sorted(entities, key=entities.get)[-4:]
+    main_actors = sorted(entities, key=entities.get)
     related_articles = r_search(main_actors)
     fut_article_entities = (r_entities_fut(id) for id in related_articles)
     environs = list(map(r_entities_run, fut_article_entities))
