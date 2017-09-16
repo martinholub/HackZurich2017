@@ -46,12 +46,12 @@ def analyze(text):
 def r_search(query, limit=15):
     query_str = 'OR'.join('"{}"'.format(q) for q in query)
     resp = requests.get('https://rmb.reuters.com/rmd/rest/xml/search',
-        params={'fieldsRef': 'id', 'channelCategory': 'OLR', 'limit': limit,
+        params={'channelCategory': 'OLR', 'limit': limit,
         'token': auth_token, 'q': 'body:' + query_str})
     xml = ET.fromstring(resp.text)
-    return [r.find('id').text
+    return {r.find('id').text: r.find('headline').text
         for r in xml
-        if r.find('id') is not None]
+        if r.find('id') is not None}
 
 def r_body_fut(id):
     return session.get('https://rmb.reuters.com/rmd/rest/xml/item', params={'token': auth_token, 'id': id})
@@ -77,7 +77,7 @@ def r_entities_run(fut):
         ent.find("*/[name='name']/value").text: float(ent.find('score').text)
         for ent in ents
         if ent.find("*/[name='name']/value") is not None
-    }, 'tags': {}, 'topics': {}}
+    }, 'tags': {}, 'topics': {}, 'id': xml.find('*/id').text}
 
 def r_entities(id):
     return r_entities_run(r_entities_fut(id))
@@ -102,4 +102,6 @@ def fastrun(text, limit=15):
     related_articles = r_search(main_actors, limit)
     fut_article_entities = (r_entities_fut(id) for id in related_articles)
     environs = list(map(r_entities_run, fut_article_entities))
+    for article in environs:
+        article['title'] = related_articles[article['id']]
     return {'point': point, 'environs': environs}
