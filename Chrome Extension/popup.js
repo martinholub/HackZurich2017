@@ -13,13 +13,18 @@ window.onload = function () {
         xhr.onreadystatechange = function () {
             if (xhr.readyState === 4 && xhr.status === 200) {
                 var json = JSON.parse(xhr.responseText);
-                //alert(xhr.responseText); 
+                
                 console.log(json.fringe_score);
                 document.getElementById("score").textContent = json.fringe_score; 
-                var doc = document.getElementById('scatter').contentWindow.document;
+                var bkdiv = document.getElementById("hist");
+                var bkinner = document.createElement('div');
+                bkinner.id = json.scatter_html[1].elementid;
+                bkdiv.appendChild(bkinner);
+                eval(json.scatter_html[0])
+                /*var doc = document.getElementById('scatter').contentWindow.document;
                 doc.open();
                 doc.write(json.scatter_html);
-                doc.close();
+                doc.close();*/
                 //$(function() {
                 //    $("#scatter").load(json.scatter_html); 
                 //}); 

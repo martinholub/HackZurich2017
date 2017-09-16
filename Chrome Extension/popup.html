@@ -4,10 +4,12 @@
     <title>Getting Started Extension's Popup</title>
     <style type="text/css"></style>
     <script src="popup.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdn.pydata.org/bokeh/release/bokeh-0.12.9.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.pydata.org/bokeh/release/bokeh-0.12.9.min.css" />
   </head>
   <body>
     <div id="contents">
+    <div id="hist" class="bk-root"></div>
     <div id="score">Loading...</div>
     <iframe id="scatter" frameborder="0" width="300px" height="300px"></iframe>
     </div>

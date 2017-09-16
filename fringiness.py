@@ -53,6 +53,8 @@ def fringiness(data, distance_metric='cosine'):
     loadings = pca.fit_transform(pairwise_distances[s,:][:,s])
     sum_sq_loadings = np.sum(loadings**2 * pca.explained_variance_ratio_, 
                              axis=1)
+    sum_sq_loadings -= sum_sq_loadings.min()
+    sum_sq_loadings /= sum_sq_loadings.max()
     return loadings.T[0], loadings.T[1], sum_sq_loadings
 
 
@@ -131,7 +133,7 @@ def embedding_plot_bokeh(x, y, s, res):
     # Define hover window
     
     # create a new plot with the tools, explicit ranges and some custom design
-    p = figure(plot_width= 1080, plot_height= 640, tools= [toolbox], title="Mouse over the dots")
+    p = figure(plot_width= 640, plot_height= 480, tools= [toolbox], title="Mouse over the dots")
     p.axis.visible = False
     p.ygrid.grid_line_color = None
     p.xgrid.grid_line_color = None
@@ -218,6 +220,16 @@ def gimmeHover():
         -->
     </div>
     """)
+    hover = HoverTool(tooltips = """
+    <div style = "max-width: 200px">
+        <div>
+            <span style="font-size: 18px;">@tit</span>
+        </div>
+        <div>
+            <span style="font-size: 11px;">@ents</span>
+        </div>
+    </div>
+    """)
     return hover
     
 def histogram_bokeh(s):
@@ -237,8 +249,8 @@ def histogram_bokeh(s):
 def keys(env):
     keys = set()
     keys |= env['entities'].keys()
-    keys |= env['tags'].keys()
-    keys |= env['topics'].keys()
+    keys |= env.get('tags', {}).keys()
+    keys |= env.get('topics', {}).keys()
     return keys
 
 def res_to_matrix(res):

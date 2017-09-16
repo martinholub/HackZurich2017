@@ -100,8 +100,17 @@ def r_entities_run(fut):
 def r_entities(id):
     return r_entities_run(r_entities_fut(id))
 
+def related(point, environs):
+    ents = [a['entities'] for a in environs]
+    allents = {k for article in ents for k in article}
+    counts = {k: sum(k in article for article in ents) for k in allents}
+    for entity in point['entities']:
+        counts.pop(entity, None)
+    return sorted(counts, key=counts.get)[-4:]
+
 def run(text, limit=15):
     r_auth_token() #In case it timed out
+    load_cache()
     point = analyze(text)
     entities = point['entities']
     main_actors = sorted(entities, key=entities.get)[-6:]
@@ -110,6 +119,7 @@ def run(text, limit=15):
     article_bodies = map(r_body_run, fut_article_bodies)
     fut_environs = (analyze_fut(body) for body in article_bodies if body)
     environs = list(map(analyze_run, fut_environs))
+    save_cache()
     return {'point': point, 'environs': environs}
 
 def fastrun(text, limit=300):

@@ -3,11 +3,12 @@ import logging
 
 from bokeh.plotting import figure
 from bokeh.resources import CDN
-from bokeh.embed import file_html
+from bokeh.embed import file_html, components
 from flask import Flask, jsonify, abort, make_response, request
 from flask_cors import CORS, cross_origin
 from fringiness import *
 from data_getter import * 
+import traceback
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
@@ -48,23 +49,28 @@ def frindge():
     current_article_text = request.json['input']
     logging.info(current_article_text)
     
-    res = run(current_article_text)
+    res = fastrun(current_article_text)
     logging.info(res)
-    x, y, f = fringiness(res_to_matrix(res))
+    try:
+        x, y, f = fringiness(res_to_matrix(res)[0])
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"fringe_score": str(e)}), 200
     logging.info(f)
     
-    plot = embedding_plot_bokeh(x, y, f)
+    plot = embedding_plot_bokeh(x, y, f, res)
     histogram = histogram_bokeh(f)
     
-    plot_html = file_html(plot, CDN, "Scatter")
-    histogram_html = file_html(plot, CDN, "Scatter")
-    s = open("scatter.html", "w")
-    s.write(plot_html)
-    s.close
+    plot_html = components(plot, wrap_script=False, wrap_plot_info=False)
+    histogram_html = ''
+    #histogram_html = file_html(plot, CDN, "Scatter")
+    #s = open("scatter.html", "w")
+    #s.write(plot_html)
+    #s.close
     
-    h = open("scatter.html", "w")
-    h.write(histogram_html)
-    h.close
+    #h = open("scatter.html", "w")
+    #h.write(histogram_html)
+    #h.close
     
     try: 
         f_input_score = f[0]
