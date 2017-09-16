@@ -62,15 +62,7 @@ def frindge():
     histogram = histogram_bokeh(f)
     
     plot_html = components(plot, wrap_script=False, wrap_plot_info=False)
-    histogram_html = ''
-    #histogram_html = file_html(plot, CDN, "Scatter")
-    #s = open("scatter.html", "w")
-    #s.write(plot_html)
-    #s.close
-    
-    #h = open("scatter.html", "w")
-    #h.write(histogram_html)
-    #h.close
+    histogram_html = components(histogram, wrap_script=False, wrap_plot_info=False)
     
     try: 
         f_input_score = f[0]

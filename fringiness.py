@@ -47,10 +47,10 @@ def fringiness(data, distance_metric='cosine'):
     """
     normalised_data = (data.T / np.linalg.norm(data, axis=1)).T
     pairwise_distances = squareform(pdist(normalised_data, distance_metric))
-    s = pairwise_distances[0] < np.mean(pairwise_distances[0])
+    #s = pairwise_distances[0] < np.mean(pairwise_distances[0])
     
     pca = PCA()
-    loadings = pca.fit_transform(pairwise_distances[s,:][:,s])
+    loadings = pca.fit_transform(pairwise_distances)#[s,:][:,s])
     sum_sq_loadings = np.sum(loadings**2 * pca.explained_variance_ratio_, 
                              axis=1)
     sum_sq_loadings -= sum_sq_loadings.min()

@@ -15,12 +15,19 @@ window.onload = function () {
                 var json = JSON.parse(xhr.responseText);
                 
                 console.log(json.fringe_score);
-                document.getElementById("score").textContent = json.fringe_score; 
+                document.getElementById("score").textContent = json.fringe_score + ' Fringiness'; 
+                
                 var bkdiv = document.getElementById("hist");
+                
                 var bkinner = document.createElement('div');
                 bkinner.id = json.scatter_html[1].elementid;
                 bkdiv.appendChild(bkinner);
                 eval(json.scatter_html[0])
+
+                var bkinner1 = document.createElement('div');
+                bkinner1.id = json.histogram_html[1].elementid;
+                bkdiv.appendChild(bkinner1);
+                eval(json.histogram_html[0])
                 /*var doc = document.getElementById('scatter').contentWindow.document;
                 doc.open();
                 doc.write(json.scatter_html);
