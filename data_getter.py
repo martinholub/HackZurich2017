@@ -43,10 +43,10 @@ def analyze_run(fut):
 def analyze(text):
     return analyze_run(analyze_fut(text))
 
-def r_search(query):
+def r_search(query, limit=15):
     query_str = 'OR'.join('"{}"'.format(q) for q in query)
     resp = requests.get('https://rmb.reuters.com/rmd/rest/xml/search',
-        params={'fieldsRef': 'id', 'channelCategory': 'OLR', 'limit': 15,
+        params={'fieldsRef': 'id', 'channelCategory': 'OLR', 'limit': limit,
         'token': auth_token, 'q': 'body:' + query_str})
     xml = ET.fromstring(resp.text)
     return [r.find('id').text
@@ -82,24 +82,24 @@ def r_entities_run(fut):
 def r_entities(id):
     return r_entities_run(r_entities_fut(id))
 
-def run(text):
+def run(text, limit=15):
     r_auth_token() #In case it timed out
     point = analyze(text)
     entities = point['entities']
     main_actors = sorted(entities, key=entities.get)[-6:]
-    related_articles = r_search(main_actors)
+    related_articles = r_search(main_actors, limit)
     fut_article_bodies = (r_body_fut(id) for id in related_articles)
     article_bodies = map(r_body_run, fut_article_bodies)
     fut_environs = (analyze_fut(body) for body in article_bodies if body)
     environs = list(map(analyze_run, fut_environs))
     return {'point': point, 'environs': environs}
 
-def fastrun(text):
+def fastrun(text, limit=15):
     r_auth_token() #In case it timed out
     point = analyze(text)
     entities = point['entities']
     main_actors = sorted(entities, key=entities.get)[-6:]
-    related_articles = r_search(main_actors)
+    related_articles = r_search(main_actors, limit)
     fut_article_entities = (r_entities_fut(id) for id in related_articles)
     environs = list(map(r_entities_run, fut_article_entities))
     return {'point': point, 'environs': environs}
