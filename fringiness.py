@@ -11,6 +11,8 @@ from bokeh.plotting import figure, show
 from bokeh.palettes import viridis
 from bokeh.models import Span
 
+from data_getter import *
+
 def fringiness(data, distance_metric='cosine'):
     """Calculates the fringiness of news articles.
 
@@ -109,16 +111,15 @@ def histogram_bokeh(s):
     return p
 
 def res_to_matrix(res):
-    all_keys = set(res['point'])
+    all_keys = set()
+    l = [res['point']] + res['environs']
 
-    for env in res['environs']:
+    for env in l:
         all_keys |= env['entities'].keys()
     reference = np.array(list(all_keys))
-    v = np.zeros(len(reference))
-    v[np.hstack([np.where(reference==key)
-                 for key in res['point']])[0]] = 1
-    vs = [v]
-    for env in res['environs']:
+
+    vs = []
+    for env in l:
         v = np.zeros(len(reference))
         try:
             v[np.hstack([np.where(reference==key)
@@ -135,3 +136,24 @@ def text_to_matrix(text):
 
 def text_to_fringiness(text):
     return fringiness(res_to_matrix(run(text)))
+
+def random_data(n, m, sparsity=0.8, mean=2, distribution='poisson'):
+    """
+    Parameters
+    ----------
+    n : int
+        number of samples
+    m : int
+        number of features
+    sparsity : float between 0 and 1
+        sets the ratio of zero values in the resulting matrix.
+    distribution : str
+        supported are 'poisson' and 'normal'
+    """
+    if distribution == 'poisson':
+        r = np.random.poisson(mean, (n, m))
+    elif distribution == 'normal':
+        r = np.random.randn(n*m).reshape((n,m)) + mean
+    p = np.random.rand(n*m).reshape((n,m))
+    r[p<sparsity] = 0
+    return r
