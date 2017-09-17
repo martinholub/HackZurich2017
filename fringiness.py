@@ -172,7 +172,7 @@ def recommendopposite(R, title, plot):
     base_url = "http://www.google.com/?#q="
     final_url = base_url + quote(title_opp[0])
     
-    button = Button(label = recomm, button_type = "link")
+    button = Button(label = recomm, button_type = "primary")
     # available button_types = default, primary, success, warning, danger, link
     # Define event on callback
     code = """
@@ -185,7 +185,8 @@ def recommendopposite(R, title, plot):
     
     wdgtbox = widgetbox(button)
     
-    grid = gridplot([[plot],[wdgtbox]],toolbar_location='above', responsive = True, lnt = 1)
+    # grid = gridplot([[plot],[wdgtbox]],toolbar_location='above', responsive = True, lnt = 1)
+    grid = gridplot([[plot],[wdgtbox]])
     
     return grid
     ###########################################

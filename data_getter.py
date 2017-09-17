@@ -59,7 +59,7 @@ def analyze(text):
 def r_search(query, limit=15):
     query_str = 'OR'.join('"{}"'.format(q) for q in query)
     resp = requests.get('https://rmb.reuters.com/rmd/rest/xml/search',
-        params={'channelCategory': 'OLR', 'limit': limit,
+        params={'channelCategory': 'OLR', 'limit': limit, 'maxAge': '30D',
         'token': auth_token, 'q': 'body:' + query_str})
     xml = ET.fromstring(resp.text)
     return {r.find('id').text: r.find('headline').text
