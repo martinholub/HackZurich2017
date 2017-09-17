@@ -1,5 +1,8 @@
+src_local/*
+rsc/*
+data/*
+*.html
 .ipynb_checkpoints
 *.pyc
 env
-src_local/*
 .DS_Store

@@ -11,9 +11,17 @@ from bokeh.plotting import figure, show
 from bokeh.palettes import viridis
 from bokeh.models import Span, HoverTool
 from bokeh.models.sources import ColumnDataSource
+from bokeh.models.callbacks import CustomJS
+from bokeh.models.tools import TapTool
+from bokeh.layouts import widgetbox, gridplot
+from bokeh.models.widgets import Button
+
 import pandas as pd
 from IPython.core.debugger import set_trace
 import data_getter
+import webbrowser
+from urllib.parse import quote
+
 
 from data_getter import *
 
@@ -142,6 +150,45 @@ def embedding_plot_bokeh(x, y, s, res):
     p = plot_with_hover(p, x, y, s, colors, ents, tit)
     
     return p
+    
+    ####################################################### 
+    # Get me something from the other side of spectra
+    
+def recommendopposite(R, title, plot):
+    '''
+    recommendoppostie- Take vector of distances from current point and vector of titles and append 'recommend alternative' hyperlink button to the ploting canavas.
+    
+    Returns
+    -------
+    grid: bokeh.layouts.grid_plot
+        Spatial arrangement of glyphs on canvas.
+    '''
+    
+    # Select title of the most distant datapoint
+    maxR_id = np.argmax(R)
+    title_opp = title[maxR_id]
+    recomm = "Try reading something allternative:\n {}".format(title_opp[0])
+    # Create Search URL
+    base_url = "http://www.google.com/?#q="
+    final_url = base_url + quote(title_opp[0])
+    
+    button = Button(label = recomm, button_type = "link")
+    # available button_types = default, primary, success, warning, danger, link
+    # Define event on callback
+    code = """
+    url = source.data['url']
+    window.open(url, "_self")
+    """
+    source = ColumnDataSource(data=dict(url = [final_url]))
+    callback = CustomJS(args=dict(source=source), code=code)
+    button.callback = callback
+    
+    wdgtbox = widgetbox(button)
+    
+    grid = gridplot([[plot],[wdgtbox]],toolbar_location='above', responsive = True, lnt = 1)
+    
+    return grid
+    ###########################################
 
 def plot_with_hover(plot, x, y, f, colors, entities, title):
     '''
@@ -182,6 +229,8 @@ def plot_with_hover(plot, x, y, f, colors, entities, title):
     # Add Hover tooltips    
     hover = gimmeHover()
     plot.add_tools(hover)
+    
+    plot = recommendopposite(R, title, plot)
     
     return plot
 def gimmeHover():
