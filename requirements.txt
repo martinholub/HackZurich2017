@@ -6,7 +6,7 @@ click==6.7
 decorator==4.1.2
 entrypoints==0.2.3
 Flask==0.12.2
-Flask-Cors==3.0.3
+Flask-Cors==3.0.9
 html5lib==0.999999999
 idna==2.6
 ipykernel==4.6.1
